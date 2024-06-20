@@ -1,6 +1,10 @@
+import logging
 from flask import Flask, request, render_template_string
-
+from datetime import datetime
+import json
 app = Flask(__name__)
+# Logging implementation 0.5
+logging.basicConfig(filename='app.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 # HTML template for the web page
 html_template = '''
@@ -32,7 +36,7 @@ html_template = '''
 @app.route('/', methods=['GET', 'POST'])
 def home():
     name = None
-day_of_week = None
+    day_of_week = None
     error = None
     if request.method == 'POST':
         name = request.form['name']
@@ -40,8 +44,15 @@ day_of_week = None
         try:
             birthdate = datetime.strptime(birthdate, '%Y-%m-%d')
             day_of_week = birthdate.strftime('%A')
+            # log request and saving to json "data.json" - remember about the file
+            logging.info(f"Received POST request: name={name}, birthdate={birthdate}")
+            data = {'name': name, 'birthdate': birthdate.strftime('%Y-%m-%d'), 'day_of_week': day_of_week}
+            with open('data.json', 'a') as f:
+                json.dump(data, f)
+                f.write('\n')
         except ValueError:
             error = "Invalid date format. Please enter the date in YYYY-MM-DD format."
+            logging.error("Invalid date format received.")
     return render_template_string(html_template, name=name, day_of_week=day_of_week, error=error)
 
 
